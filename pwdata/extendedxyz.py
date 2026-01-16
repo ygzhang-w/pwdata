@@ -53,7 +53,15 @@ def get_xyz_content(image_data:Image):
         image_data._set_cartesian()
     xyz_content +="%d\n" % image_data.atom_nums
     # data_name.write("Iteration: %s\n" % image_data.iteration)
-    output_head = 'Lattice="%.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f" Properties=species:S:1:pos:R:3:force:R:3 pbc="T T T" energy={} '.format(image_data.Ep)
+    
+    # Check if atomic_energy is available
+    has_atomic_energy = image_data.atomic_energy is not None and len(image_data.atomic_energy) > 0
+    
+    if has_atomic_energy:
+        output_head = 'Lattice="%.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f" Properties=species:S:1:pos:R:3:forces:R:3:atomic_energies:R:1 pbc="T T T" energy={} '.format(image_data.Ep)
+    else:
+        output_head = 'Lattice="%.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f" Properties=species:S:1:pos:R:3:forces:R:3 pbc="T T T" energy={} '.format(image_data.Ep)
+    
     output_extended = (image_data.lattice[0][0], image_data.lattice[0][1], image_data.lattice[0][2], 
                         image_data.lattice[1][0], image_data.lattice[1][1], image_data.lattice[1][2], 
                         image_data.lattice[2][0], image_data.lattice[2][1], image_data.lattice[2][2])
@@ -67,9 +75,15 @@ def get_xyz_content(image_data:Image):
     xyz_content += output_head % output_extended
 
     for j in range(image_data.atom_nums):
-        properties_format = "%s %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f\n"
-        properties = (elements[image_data.atom_types_image[j]], image_data.position[j][0], image_data.position[j][1], image_data.position[j][2], 
-                        image_data.force[j][0], image_data.force[j][1], image_data.force[j][2])
+        if has_atomic_energy:
+            properties_format = "%s %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f\n"
+            properties = (elements[image_data.atom_types_image[j]], image_data.position[j][0], image_data.position[j][1], image_data.position[j][2], 
+                            image_data.force[j][0], image_data.force[j][1], image_data.force[j][2],
+                            image_data.atomic_energy[j])
+        else:
+            properties_format = "%s %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f\n"
+            properties = (elements[image_data.atom_types_image[j]], image_data.position[j][0], image_data.position[j][1], image_data.position[j][2], 
+                            image_data.force[j][0], image_data.force[j][1], image_data.force[j][2])
         xyz_content += properties_format % properties
     return xyz_content
 
